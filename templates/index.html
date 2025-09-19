@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Script Generator - Backend Testing</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f5f5;
+            padding: 20px;
+        }
+        
+        .container { max-width: 1200px; margin: 0 auto; }
+        
+        .header {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #007cba;
+        }
+        
+        .header h1 { color: #007cba; margin-bottom: 10px; }
+        .header p { color: #666; }
+        
+        .section {
+            background: white;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            padding: 20px;
+            border: 1px solid #ddd;
+        }
+        
+        .section h3 {
+            color: #007cba;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 10px;
+        }
+        
+        .form-group { margin-bottom: 15px; }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        
+        input, textarea, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        textarea { min-height: 100px; resize: vertical; }
+        
+        button {
+            background: #007cba;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        
+        button:hover { background: #005a8b; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        
+        .btn-danger { background: #dc3545; }
+        .btn-danger:hover { background: #c82333; }
+        
+        .btn-success { background: #28a745; }
+        .btn-success:hover { background: #218838; }
+        
+        .status { padding: 10px; border-radius: 4px; margin-bottom: 10px; }
+        .status.success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .status.error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .status.info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        
+        .video-item, .folder-item {
+            background: #f8f9fa;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .video-item h4, .folder-item h4 { margin-bottom: 5px; color: #495057; }
+        .video-status { font-size: 12px; padding: 2px 6px; border-radius: 3px; }
+        .video-status.completed { background: #d4edda; color: #155724; }
+        .video-status.processing { background: #fff3cd; color: #856404; }
+        .video-status.error { background: #f8d7da; color: #721c24; }
+        
+        .script-output {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 20px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            max-height: 600px;
+            overflow-y: auto;
+            line-height: 1.8;
+        }
+        
+        .chat-container {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            height: 400px;
+            overflow-y: auto;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .chat-message {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        
+        .chat-message.user {
+            background: #007cba;
+            color: white;
+            margin-left: 20px;
+        }
+        
+        .chat-message.ai {
+            background: #e9ecef;
+            color: #333;
+            margin-right: 20px;
+        }
+        
+        .file-upload-zone {
+            border: 2px dashed #ddd;
+            border-radius: 8px;
+            padding: 30px;
+            text-align: center;
+            background: #fafafa;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+        }
+        
+        .file-upload-zone.dragover {
+            border-color: #007cba;
+            background: #f0f8ff;
+        }
+        
+        .file-info {
+            background: #e3f2fd;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            border-left: 4px solid #2196f3;
+        }
+        
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        @media (max-width: 768px) { .grid { grid-template-columns: 1fr; } }
+        
+        .hidden { display: none; }
+        
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #007cba;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>YouTube Script Generator - Backend Testing Interface</h1>
+            <p>Simplified interface for testing advanced script generation with document analysis and YouTube integration</p>
+            <div id="globalStatus" class="status info">Ready - Upload documents or add YouTube videos to begin</div>
+        </div>
+
+        <!-- Document Upload Section -->
+        <div class="section">
+            <h3>Document Analysis (PDF/DOC)</h3>
+            <div class="file-upload-zone" id="fileUploadZone">
+                <p><strong>Drop files here or click to upload</strong></p>
+                <p>Supported: PDF, DOC, DOCX, TXT</p>
+                <input type="file" id="fileInput" accept=".pdf,.doc,.docx,.txt" multiple hidden>
+            </div>
+            <div id="uploadedFiles"></div>
+        </div>
+
+        <div class="grid">
+            <!-- Video Management -->
+            <div class="section">
+                <h3>YouTube Videos</h3>
+                <div class="form-group">
+                    <label>Folder Name:</label>
+                    <input type="text" id="folderName" placeholder="My Personal Videos">
+                </div>
+                <div class="form-group">
+                    <select id="folderType">
+                        <option value="personal">Personal (Your Channel)</option>
+                        <option value="inspiration">Inspiration (Other Channels)</option>
+                    </select>
+                </div>
+                <button onclick="createFolder()">Create Folder</button>
+                <hr style="margin: 20px 0;">
+                <div class="form-group">
+                    <label>YouTube URL:</label>
+                    <input type="url" id="youtubeUrl" placeholder="https://youtube.com/watch?v=...">
+                </div>
+                <div class="form-group">
+                    <select id="targetFolder">
+                        <option value="">Select folder...</option>
+                    </select>
+                </div>
+                <button onclick="addVideo()">Add Video</button>
+                <button onclick="loadFolders()">Refresh</button>
+                <div id="foldersContainer"></div>
+            </div>
+
+            <!-- System Status -->
+            <div class="section">
+                <h3>System Status</h3>
+                <div id="systemStatus">
+                    <p><strong>Total Videos:</strong> <span id="totalVideos">0</span></p>
+                    <p><strong>Processed:</strong> <span id="processedVideos">0</span></p>
+                    <p><strong>Processing:</strong> <span id="processingVideos">0</span></p>
+                    <p><strong>Documents:</strong> <span id="totalDocs">0</span></p>
+                    <p><strong>Ready for Generation:</strong> <span id="readyStatus">No</span></p>
+                </div>
+                <hr style="margin: 15px 0;">
+                <button id="analyzeBtn" onclick="analyzeContent()" disabled>Analyze Content</button>
+                <button id="topicInsightsBtn" onclick="getTopicInsights()" disabled>Get Topic Insights</button>
+            </div>
+        </div>
+
+        <!-- Script Generation -->
+        <div class="section">
+            <h3>Script Generation</h3>
+            <div class="form-group">
+                <label>Topic for Insights (optional):</label>
+                <input type="text" id="topicQuery" placeholder="e.g., YouTube SEO, Content Strategy">
+                <button onclick="analyzeSpecificTopic()">Analyze Topic</button>
+            </div>
+            <div class="form-group">
+                <label>Custom Prompt:</label>
+                <textarea id="customPrompt" placeholder="Generate a 10-minute tutorial about YouTube SEO optimization. Include specific tips on keyword research, thumbnail design, and title optimization. Make it actionable with step-by-step instructions."></textarea>
+            </div>
+            <button id="generateBtn" onclick="generateScript()" disabled>Generate Script</button>
+            <button onclick="loadExamplePrompts()">Load Examples</button>
+        </div>
+
+        <!-- Topic Insights Display -->
+        <div id="topicInsightsSection" class="section hidden">
+            <h3>Topic Insights</h3>
+            <div id="topicInsightsContent" class="script-output"></div>
+        </div>
+
+        <!-- Script Output -->
+        <div id="scriptSection" class="section hidden">
+            <h3>Generated Script</h3>
+            <div class="form-group">
+                <button onclick="copyScript()">Copy Script</button>
+                <button onclick="downloadScript()">Download</button>
+                <span id="scriptStats"></span>
+            </div>
+            <div id="scriptOutput" class="script-output"></div>
+        </div>
+
+        <!-- Chat Interface -->
+        <div id="chatSection" class="section hidden">
+            <h3>Script Modification Chat</h3>
+            <div id="chatContainer" class="chat-container"></div>
+            <div class="form-group">
+                <input type="text" id="chatInput" placeholder="Ask me to modify your script..." disabled>
+                <button id="sendChatBtn" onclick="sendChatMessage()" disabled>Send</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class SimplifiedScriptGenerator {
+            constructor() {
+                this.chatSessionId = null;
+                this.currentScript = null;
+                this.uploadedFiles = [];
+                this.init();
+            }
+
+            init() {
+                this.setupFileUpload();
+                this.loadFolders();
+                this.startStatusPolling();
+                this.setupChatInput();
+            }
+
+            setupFileUpload() {
+                const fileInput = document.getElementById('fileInput');
+                const uploadZone = document.getElementById('fileUploadZone');
+
+                uploadZone.addEventListener('click', () => fileInput.click());
+
+                uploadZone.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    uploadZone.classList.add('dragover');
+                });
+
+                uploadZone.addEventListener('dragleave', () => {
+                    uploadZone.classList.remove('dragover');
+                });
+
+                uploadZone.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    uploadZone.classList.remove('dragover');
+                    this.handleFiles(e.dataTransfer.files);
+                });
+
+                fileInput.addEventListener('change', (e) => {
+                    this.handleFiles(e.target.files);
+                });
+            }
+
+            async handleFiles(files) {
+                const uploadedFilesDiv = document.getElementById('uploadedFiles');
+                
+                for (let file of files) {
+                    if (!this.isValidFileType(file)) {
+                        this.showStatus(`File ${file.name} is not supported`, 'error');
+                        continue;
+                    }
+
+                    const fileId = this.generateId();
+                    const fileInfo = {
+                        id: fileId,
+                        name: file.name,
+                        type: file.type,
+                        size: file.size,
+                        status: 'uploading'
+                    };
+
+                    this.uploadedFiles.push(fileInfo);
+                    this.renderUploadedFiles();
+                    
+                    try {
+                        const formData = new FormData();
+                        formData.append('file', file);
+                        formData.append('file_id', fileId);
+
+                        const response = await fetch('/api/upload-document', {
+                            method: 'POST',
+                            body: formData
+                        });
+
+                        const result = await response.json();
+                        
+                        if (result.success) {
+                            fileInfo.status = 'completed';
+                            fileInfo.stats = result.stats;
+                            this.showStatus(`Document ${file.name} processed successfully`, 'success');
+                        } else {
+                            fileInfo.status = 'error';
+                            fileInfo.error = result.error;
+                            this.showStatus(`Error processing ${file.name}: ${result.error}`, 'error');
+                        }
+                    } catch (error) {
+                        fileInfo.status = 'error';
+                        fileInfo.error = error.message;
+                        this.showStatus(`Error uploading ${file.name}: ${error.message}`, 'error');
+                    }
+                    
+                    this.renderUploadedFiles();
+                    this.updateSystemStatus();
+                }
+            }
+
+            isValidFileType(file) {
+                const validTypes = [
+                    'application/pdf',
+                    'application/msword',
+                    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                    'text/plain'
+                ];
+                return validTypes.includes(file.type) || 
+                       file.name.toLowerCase().endsWith('.pdf') ||
+                       file.name.toLowerCase().endsWith('.doc') ||
+                       file.name.toLowerCase().endsWith('.docx') ||
+                       file.name.toLowerCase().endsWith('.txt');
+            }
+
+            renderUploadedFiles() {
+                const container = document.getElementById('uploadedFiles');
+                container.innerHTML = this.uploadedFiles.map(file => `
+                    <div class="file-info">
+                        <strong>${file.name}</strong> (${this.formatFileSize(file.size)})
+                        <span class="video-status ${file.status}">${file.status.toUpperCase()}</span>
+                        ${file.stats ? `<br><small>${file.stats.char_count} chars, ${file.stats.word_count} words</small>` : ''}
+                        ${file.error ? `<br><small style="color: #721c24">${file.error}</small>` : ''}
+                        <button onclick="app.removeFile('${file.id}')" style="float: right; padding: 2px 8px; font-size: 12px;" class="btn-danger">Remove</button>
+                    </div>
+                `).join('');
+            }
+
+            formatFileSize(bytes) {
+                if (bytes === 0) return '0 Bytes';
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+
+            removeFile(fileId) {
+                if (confirm('Remove this file?')) {
+                    this.uploadedFiles = this.uploadedFiles.filter(f => f.id !== fileId);
+                    this.renderUploadedFiles();
+                    fetch(`/api/documents/${fileId}`, { method: 'DELETE' });
+                    this.updateSystemStatus();
+                }
+            }
+
+            setupChatInput() {
+                document.getElementById('chatInput').addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        this.sendChatMessage();
+                    }
+                });
+            }
+
+            async loadFolders() {
+                try {
+                    const response = await fetch('/api/folders');
+                    const data = await response.json();
+                    this.renderFolders(data.folders);
+                    this.updateFolderSelect(data.folders);
+                } catch (error) {
+                    this.showStatus('Failed to load folders', 'error');
+                }
+            }
+
+            renderFolders(folders) {
+                const container = document.getElementById('foldersContainer');
+                
+                if (folders.length === 0) {
+                    container.innerHTML = '<p>No folders created yet</p>';
+                    return;
+                }
+
+                container.innerHTML = '<h4>Current Folders:</h4>' + folders.map(folder => `
+                    <div class="folder-item">
+                        <h4>${folder.name} (${folder.type})</h4>
+                        <small>${folder.video_count} videos</small>
+                        <button onclick="app.deleteFolder('${folder.id}')" class="btn-danger" style="float: right;">Delete</button>
+                        <div id="folder-${folder.id}-videos" style="margin-top: 10px;"></div>
+                    </div>
+                `).join('');
+
+                folders.forEach(folder => this.loadFolderVideos(folder.id));
+            }
+
+            updateFolderSelect(folders) {
+                const select = document.getElementById('targetFolder');
+                select.innerHTML = '<option value="">Select folder...</option>' + 
+                    folders.map(f => `<option value="${f.id}">${f.name}</option>`).join('');
+            }
+
+            async loadFolderVideos(folderId) {
+                try {
+                    const response = await fetch(`/api/folders/${folderId}/videos`);
+                    const data = await response.json();
+                    this.renderFolderVideos(folderId, data.videos);
+                } catch (error) {
+                    console.error('Failed to load folder videos:', error);
+                }
+            }
+
+            renderFolderVideos(folderId, videos) {
+                const container = document.getElementById(`folder-${folderId}-videos`);
+                
+                if (videos.length === 0) {
+                    container.innerHTML = '<small>No videos yet</small>';
+                    return;
+                }
+
+                container.innerHTML = videos.map(video => `
+                    <div class="video-item">
+                        <strong>${video.title}</strong>
+                        <span class="video-status ${video.status}">${video.status.toUpperCase()}</span>
+                        ${video.stats ? `<br><small>${video.stats.char_count} chars, ${video.stats.word_count} words, ~${video.stats.estimated_duration}min</small>` : ''}
+                        <button onclick="app.deleteVideo('${folderId}', '${video.id}')" class="btn-danger" style="float: right; padding: 2px 8px; font-size: 12px;">Remove</button>
+                    </div>
+                `).join('');
+            }
+
+            startStatusPolling() {
+                setInterval(async () => {
+                    try {
+                        const response = await fetch('/api/status');
+                        const status = await response.json();
+                        this.updateSystemStatus(status);
+                        
+                        if (status.processing_videos > 0) {
+                            this.loadFolders();
+                        }
+                    } catch (error) {
+                        // Silent fail
+                    }
+                }, 3000);
+            }
+
+            updateSystemStatus(status) {
+                if (!status) {
+                    document.getElementById('totalDocs').textContent = this.uploadedFiles.filter(f => f.status === 'completed').length;
+                    return;
+                }
+
+                document.getElementById('totalVideos').textContent = status.total_videos;
+                document.getElementById('processedVideos').textContent = status.completed_videos;
+                document.getElementById('processingVideos').textContent = status.processing_videos;
+                document.getElementById('readyStatus').textContent = status.ready_for_analysis ? 'Yes' : 'No';
+                
+                const completedDocs = this.uploadedFiles.filter(f => f.status === 'completed').length;
+                document.getElementById('totalDocs').textContent = completedDocs;
+
+                const analyzeBtn = document.getElementById('analyzeBtn');
+                const generateBtn = document.getElementById('generateBtn');
+                const topicBtn = document.getElementById('topicInsightsBtn');
+                
+                const canGenerate = status.ready_for_analysis || completedDocs > 0;
+                analyzeBtn.disabled = !canGenerate;
+                generateBtn.disabled = !canGenerate;
+                topicBtn.disabled = !canGenerate;
+
+                if (status.processing_videos > 0) {
+                    document.getElementById('globalStatus').innerHTML = `<div class="spinner"></div> Processing ${status.processing_videos} video(s)...`;
+                    document.getElementById('globalStatus').className = 'status info';
+                } else if (canGenerate) {
+                    document.getElementById('globalStatus').textContent = 'Ready for script generation';
+                    document.getElementById('globalStatus').className = 'status success';
+                } else {
+                    document.getElementById('globalStatus').textContent = 'Upload documents or add videos to begin';
+                    document.getElementById('globalStatus').className = 'status info';
+                }
+            }
+
+            async analyzeContent() {
+                const btn = document.getElementById('analyzeBtn');
+                const originalText = btn.textContent;
+                btn.innerHTML = '<div class="spinner"></div> Analyzing...';
+                btn.disabled = true;
+
+                try {
+                    const response = await fetch('/api/analyze-content', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        this.showStatus('Content analysis complete!', 'success');
+                    } else {
+                        this.showStatus(`Analysis error: ${data.error}`, 'error');
+                    }
+                } catch (error) {
+                    this.showStatus('Analysis failed', 'error');
+                } finally {
+                    btn.textContent = originalText;
+                    btn.disabled = false;
+                }
+            }
+
+            async analyzeSpecificTopic() {
+                const topic = document.getElementById('topicQuery').value.trim();
+                if (!topic) {
+                    this.showStatus('Please enter a topic to analyze', 'error');
+                    return;
+                }
+
+                try {
+                    const response = await fetch('/api/get-topic-insights', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ topic })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        document.getElementById('topicInsightsContent').textContent = data.insights;
+                        document.getElementById('topicInsightsSection').classList.remove('hidden');
+                        this.showStatus(`Topic insights generated for: ${topic}`, 'success');
+                    } else {
+                        this.showStatus(data.error, 'error');
+                    }
+                } catch (error) {
+                    this.showStatus('Failed to analyze topic', 'error');
+                }
+            }
+
+            async generateScript() {
+                const prompt = document.getElementById('customPrompt').value.trim();
+                if (!prompt) {
+                    this.showStatus('Please enter a prompt for script generation', 'error');
+                    return;
+                }
+
+                const btn = document.getElementById('generateBtn');
+                const originalText = btn.textContent;
+                btn.innerHTML = '<div class="spinner"></div> Generating...';
+                btn.disabled = true;
+
+                try {
+                    const response = await fetch('/api/generate-from-prompt', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ prompt })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        this.currentScript = data.script;
+                        this.chatSessionId = data.chat_session_id;
+                        
+                        document.getElementById('scriptOutput').textContent = data.script;
+                        document.getElementById('scriptStats').textContent = 
+                            `Generated from ${data.stats.personal_videos} personal + ${data.stats.inspiration_videos} inspiration videos`;
+                        
+                        document.getElementById('scriptSection').classList.remove('hidden');
+                        document.getElementById('chatSection').classList.remove('hidden');
+                        
+                        // Enable chat
+                        document.getElementById('chatInput').disabled = false;
+                        document.getElementById('sendChatBtn').disabled = false;
+                        
+                        this.addChatMessage('ai', 'Script generated! You can now ask me to modify it. Try:\n\n• "Make the intro more engaging"\n• "Add more examples"\n• "Make it shorter"\n• "Change the tone to be more casual"');
+                        
+                        this.showStatus('Script generated successfully!', 'success');
+                    } else {
+                        this.showStatus(data.error, 'error');
+                    }
+                } catch (error) {
+                    this.showStatus('Script generation failed', 'error');
+                } finally {
+                    btn.textContent = originalText;
+                    btn.disabled = false;
+                }
+            }
+
+            async sendChatMessage() {
+                const input = document.getElementById('chatInput');
+                const message = input.value.trim();
+                
+                if (!message || !this.currentScript) return;
+
+                this.addChatMessage('user', message);
+                input.value = '';
+                input.disabled = true;
+                document.getElementById('sendChatBtn').disabled = true;
+
+                try {
+                    const response = await fetch('/api/chat-modify-script', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            message: message,
+                            chat_session_id: this.chatSessionId
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        this.addChatMessage('ai', data.response);
+                        this.handleScriptModification(data.response);
+                    } else {
+                        this.addChatMessage('ai', 'Sorry, I encountered an error: ' + data.error);
+                    }
+                } catch (error) {
+                    this.addChatMessage('ai', 'Sorry, I encountered a connection error. Please try again.');
+                } finally {
+                    input.disabled = false;
+                    document.getElementById('sendChatBtn').disabled = false;
+                    input.focus();
+                }
+            }
+
+            addChatMessage(type, message) {
+                const container = document.getElementById('chatContainer');
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `chat-message ${type}`;
+                messageDiv.innerHTML = message.replace(/\n/g, '<br>');
+                container.appendChild(messageDiv);
+                container.scrollTop = container.scrollHeight;
+            }
+
+            handleScriptModification(aiResponse) {
+                const scriptMatch = aiResponse.match(/\*\*Modified Script:\*\*\s*([\s\S]*?)\s*\*\*Changes Made:\*\*/);
+                
+                if (scriptMatch && scriptMatch[1]) {
+                    const modifiedScript = scriptMatch[1].trim();
+                    document.getElementById('scriptOutput').textContent = modifiedScript;
+                    this.currentScript = modifiedScript;
+                    
+                    fetch('/api/update-script', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            script: modifiedScript,
+                            chat_session_id: this.chatSessionId
+                        })
+                    });
+                }
+            }
+
+            // Utility methods
+            generateId() {
+                return Date.now().toString(36) + Math.random().toString(36).substr(2);
+            }
+
+            copyScript() {
+                const content = document.getElementById('scriptOutput').textContent;
+                navigator.clipboard.writeText(content).then(() => {
+                    this.showStatus('Script copied to clipboard', 'success');
+                });
+            }
+
+            downloadScript() {
+                const content = document.getElementById('scriptOutput').textContent;
+                const blob = new Blob([content], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `script_${new Date().toISOString().split('T')[0]}.txt`;
+                a.click();
+                URL.revokeObjectURL(url);
+            }
+
+            loadExamplePrompts() {
+                const examples = [
+                    "Generate a 10-minute tutorial about YouTube SEO optimization for beginners. Include specific tips on keyword research, thumbnail design, and title optimization. Make it actionable with step-by-step instructions.",
+                    "Create a 15-minute deep-dive video about the psychology of viral content. Explain what makes videos go viral, include case studies, and provide practical tips for creators.",
+                    "Write a 5-minute motivational video for content creators dealing with burnout. Include personal strategies, mindset tips, and actionable advice."
+                ];
+                document.getElementById('customPrompt').value = examples[Math.floor(Math.random() * examples.length)];
+            }
+
+            showStatus(message, type) {
+                const statusDiv = document.createElement('div');
+                statusDiv.className = `status ${type}`;
+                statusDiv.textContent = message;
+                document.body.appendChild(statusDiv);
+                setTimeout(() => statusDiv.remove(), 4000);
+            }
+
+            // API methods
+            async createFolder() {
+                const name = document.getElementById('folderName').value.trim();
+                const type = document.getElementById('folderType').value;
+                
+                if (!name) {
+                    this.showStatus('Folder name is required', 'error');
+                    return;
+                }
+
+                try {
+                    const response = await fetch('/api/folders', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name, type })
+                    });
+                    
+                    const data = await response.json();
+                    if (data.success) {
+                        this.loadFolders();
+                        document.getElementById('folderName').value = '';
+                        this.showStatus('Folder created successfully', 'success');
+                    } else {
+                        this.showStatus(data.error, 'error');
+                    }
+                } catch (error) {
+                    this.showStatus('Failed to create folder', 'error');
+                }
+            }
+
+            async addVideo() {
+                const url = document.getElementById('youtubeUrl').value.trim();
+                const folderId = document.getElementById('targetFolder').value;
+                
+                if (!url || !folderId) {
+                    this.showStatus('Both URL and folder are required', 'error');
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`/api/folders/${folderId}/videos`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ url })
+                    });
+                    
+                    const data = await response.json();
+                    if (data.success) {
+                        this.loadFolders();
+                        document.getElementById('youtubeUrl').value = '';
+                        this.showStatus('Video added - processing transcript...', 'success');
+                    } else {
+                        this.showStatus(data.error, 'error');
+                    }
+                } catch (error) {
+                    this.showStatus('Failed to add video', 'error');
+                }
+            }
+
+            async deleteFolder(folderId) {
+                if (!confirm('Delete this folder and all its videos?')) return;
+
+                try {
+                    const response = await fetch(`/api/folders/${folderId}`, {
+                        method: 'DELETE'
+                    });
+                    
+                    const data = await response.json();
+                    if (data.success) {
+                        this.loadFolders();
+                        this.showStatus('Folder deleted', 'success');
+                    } else {
+                        this.showStatus(data.error, 'error');
+                    }
+                } catch (error) {
+                    this.showStatus('Failed to delete folder', 'error');
+                }
+            }
+
+            async deleteVideo(folderId, videoId) {
+                if (!confirm('Remove this video?')) return;
+
+                try {
+                    const response = await fetch(`/api/folders/${folderId}/videos/${videoId}`, {
+                        method: 'DELETE'
+                    });
+                    
+                    const data = await response.json();
+                    if (data.success) {
+                        this.loadFolderVideos(folderId);
+                        this.showStatus('Video removed', 'success');
+                    } else {
+                        this.showStatus(data.error, 'error');
+                    }
+                } catch (error) {
+                    this.showStatus('Failed to remove video', 'error');
+                }
+            }
+
+            async getTopicInsights() {
+                const topic = document.getElementById('topicQuery').value.trim();
+                if (!topic) {
+                    this.showStatus('Please enter a topic first', 'error');
+                    return;
+                }
+                this.analyzeSpecificTopic();
+            }
+        }
+
+        // Global functions for inline event handlers
+        const app = new SimplifiedScriptGenerator();
+        
+        function createFolder() { app.createFolder(); }
+        function addVideo() { app.addVideo(); }
+        function loadFolders() { app.loadFolders(); }
+        function analyzeContent() { app.analyzeContent(); }
+        function generateScript() { app.generateScript(); }
+        function getTopicInsights() { app.getTopicInsights(); }
+        function analyzeSpecificTopic() { app.analyzeSpecificTopic(); }
+        function sendChatMessage() { app.sendChatMessage(); }
+        function copyScript() { app.copyScript(); }
+        function downloadScript() { app.downloadScript(); }
+        function loadExamplePrompts() { app.loadExamplePrompts(); }
+    </script>
+</body>
+</html>
